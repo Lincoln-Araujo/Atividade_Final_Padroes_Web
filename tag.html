@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notícias por Tag</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- jQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+        .img-fixed {
+            width: 100%; /* Mantém a largura da imagem responsiva */
+            height: 200px; /* Define uma altura fixa */
+            object-fit: cover; /* Ajusta a imagem para cobrir o contêiner */
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="bg-dark text-white p-3 d-flex justify-content-between">
+        <h1>Tech News</h1>
+        <nav>
+            <a href="index.html" class="text-white mx-2">Início</a>
+            <a href="#" id="add-news-link" class="text-white mx-2">Adicionar Notícia</a>
+            <a href="#" class="text-white mx-2">Contato</a>
+        </nav>
+    </header>
+
+    <!-- Main content -->
+    <main class="container my-4">
+        <h2 class="text-center pb-4">Notícias com a tag: <span id="tag-name"></span></h2>
+        <div class="row">
+            <!-- News Cards Section -->
+            <div class="col-md-8">
+                <div class="row" id="tag-news">
+                    <!-- News with the tag will be injected here by JavaScript -->
+                </div>
+            </div>
+            <!-- Sidebar Section -->
+            <div class="col-md-4">
+                <!-- Search Box -->
+                <div class="mb-4">
+                    <h5>Pesquisar</h5>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="search-input">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" id="search-button">Pesquisar</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Categories Box -->
+                <div>
+                    <h5>Categorias</h5>
+                    <div id="categories">
+                        <!-- Categories will be injected here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white text-center p-3">
+        <p>Copyright C Portal - 2024</p>
+    </footer>
+
+    <!-- News Form Modal -->
+    <div class="modal" id="newsModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Adicionar Notícia</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="news-form">
+                        <div class="form-group">
+                            <label for="news-title">Título</label>
+                            <input type="text" class="form-control" id="news-title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="news-content">Conteúdo</label>
+                            <textarea class="form-control" id="news-content" rows="5" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="news-tags">Tags</label>
+                            <input type="text" class="form-control" id="news-tags" placeholder="Separe as tags por vírgula" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="news-image">Imagem da Capa</label>
+                            <input type="text" class="form-control" id="news-image" placeholder="Insira a url da imagem" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        $(document).ready(function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tag = urlParams.get('tag');
+            const newsList = JSON.parse(localStorage.getItem('newsList')) || [];
+
+            $('#tag-name').text(tag);
+
+            let filteredNews = newsList.filter(news => news.tags.split(',').map(t => t.trim()).includes(tag));
+            let newsCards = '';
+            filteredNews.forEach((news, index) => {
+                newsCards += `
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <img src="${news.image}" class="card-img-top img-fixed" alt="Notícia">
+                        <div class="card-body">
+                            <h5 class="card-title">${news.title}</h5>
+                            <p class="card-text">${news.content.substring(0, 150)}...</p>
+                            <p class="text-muted">${news.date}</p>
+                            <a href="news.html?id=${index}" class="btn btn-info" style="background-color: #00BFFF;">Ver mais</a>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            $('#tag-news').html(newsCards);
+
+            $('#add-news-link').click(function() {
+                $('#newsModal').modal('show');
+            });
+
+            $('#news-form').submit(function(event) {
+                event.preventDefault();
+                // Save news to local storage
+                let title = $('#news-title').val();
+                let content = $('#news-content').val();
+                let tags = $('#news-tags').val();
+                let image = $('#news-image').val();
+                let date = new Date().toLocaleString();
+
+                let news = {
+                    title: title,
+                    content: content,
+                    tags: tags,
+                    image: image,
+                    date: date
+                };
+
+                let newsList = JSON.parse(localStorage.getItem('newsList')) || [];
+                newsList.push(news);
+                localStorage.setItem('newsList', JSON.stringify(newsList));
+
+                $('#newsModal').modal('hide');
+                alert('Notícia adicionada com sucesso!');
+            });
+
+            $('#search-button').click(function() {
+                let searchTerm = $('#search-input').val().toLowerCase();
+                let filteredNews = newsList.filter(function(news) {
+                    return news.title.toLowerCase().includes(searchTerm) || news.content.toLowerCase().includes(searchTerm);
+                });
+                let newsCards = '';
+                filteredNews.forEach(function(news, index) {
+                    newsCards += `
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <img src="${news.image}" class="card-img-top" alt="Notícia">
+                            <div class="card-body">
+                                <h5 class="card-title">${news.title}</h5>
+                                <p class="card-text">${news.content.substring(0, 150)}...</p>
+                                <p class="text-muted">${news.date}</p>
+                                <a href="news.html?id=${index}" class="btn btn-info" style="background-color: #00BFFF;">Ver mais</a>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+                $('#tag-news').html(newsCards);
+            });
+
+            function displayCategories() {
+                let categories = new Set();
+                newsList.forEach(function(news) {
+                    news.tags.split(',').forEach(function(tag) {
+                        categories.add(tag.trim());
+                    });
+                });
+
+                let categoryLinks = '';
+                categories.forEach(function(category) {
+                    categoryLinks += `<a href="tag.html?tag=${encodeURIComponent(category)}" class="badge badge-primary">${category}</a> `;
+                });
+                $('#categories').html(categoryLinks);
+            }
+
+            displayCategories();
+        });
+    </script>
+</body>
+</html>
